@@ -16,7 +16,7 @@
 #ifndef JPETSMEARINGFUNCTIONS_H
 #define JPETSMEARINGFUNCTIONS_H
 
-#include <JPetRandom/JPetRandom.h>
+#include <JPetCachedFunction/JPetCachedFunction.h>
 
 #ifdef __CINT__
 //when cint is used instead of compiler, override word is not recognized
@@ -24,23 +24,40 @@
 #   define override
 #endif
 
+using Params = jpet_common_tools::JPetCachedFunctionParams;
+using Range = jpet_common_tools::Range;
+using CachedFunction1D = jpet_common_tools::JPetCachedFunction1D;
+using CachedFunction2D = jpet_common_tools::JPetCachedFunction2D;
 
 /**
  * @brief stores smearing functions that should be applied to generated computer simulations in
  * order to reproduce collected data 
  */
 
+const Params fParamTimeSmearing("pol0", {-1});  
+const Params fParamEnergySmearing("pol0", {-1});  
+const Params fParamZHitSmearing("pol0", {-1});  
+
 class JPetSmearingFunctions
 {
-      public:
-            static float addEnergySmearing(float);
-            static float addZHitSmearing(float, float);
-            static float addTimeSmearing(float, float);
-      private:
-            static TRandom3* fRandomGenerator;
-            static const float kEnergyThreshold;
-            static const float kReferenceEnergy;
-            static const float kTimeResolutionConstant;
+  public:
+    static float addEnergySmearing(float);
+    static float addZHitSmearing(float, float);
+    static const double addTimeSmearing(float, float);
+
+    static void SetFunTimeSmearing(const Params &params, const Range range); 
+
+    static void SetStandardSmearing();
+
+  private:
+    static const float kEnergyThreshold;
+    static const float kReferenceEnergy;
+    static const float kTimeResolutionConstant;
+
+    static CachedFunction1D fFunEnergySmearing;
+    static CachedFunction2D fFunZHitSmearing;
+    static CachedFunction2D fFunTimeSmearing;
+
 
 };
 

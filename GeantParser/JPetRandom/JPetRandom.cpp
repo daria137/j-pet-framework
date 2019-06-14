@@ -21,7 +21,7 @@ TRandom3* JPetRandom::GetRandomGenerator()
 {
       if (fRandomGenerator == nullptr)
       {
-            fRandomGenerator = new TRandom3(0);
+            fRandomGenerator = dynamic_cast<TRandom3*>(gRandom);
       }
       return fRandomGenerator;
 }

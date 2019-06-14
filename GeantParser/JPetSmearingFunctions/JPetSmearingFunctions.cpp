@@ -20,33 +20,53 @@ const float JPetSmearingFunctions::kEnergyThreshold = 200.; ///< see Eur. Phys. 
 const float JPetSmearingFunctions::kReferenceEnergy = 270.; ///< see Eur. Phys. J. C (2016) 76:445  equation 4 and 5
 const float JPetSmearingFunctions::kTimeResolutionConstant = 80.; ///< see Eur. Phys. J. C (2016) 76:445  equation 3
 
-TRandom3* JPetSmearingFunctions::fRandomGenerator = JPetRandom::GetRandomGenerator();
+CachedFunction2D JPetSmearingFunctions::fFunTimeSmearing(fParamTimeSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
+CachedFunction1D JPetSmearingFunctions::fFunEnergySmearing(fParamEnergySmearing,Range(10000, 0., 100.));
+CachedFunction2D JPetSmearingFunctions::fFunZHitSmearing(fParamZHitSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
 
+// z: zIn, EneIn
+// e: eneIn
+// t: t, eneIn
 float JPetSmearingFunctions::addZHitSmearing(float zIn, float z_res)
 {
-  return fRandomGenerator->Gaus(zIn, z_res);
+  //return fRandomGenerator->Gaus(zIn, z_res);
+   double ene = 4.0;
+  return fFunZHitSmearing(zIn,ene);
 }
 
 float JPetSmearingFunctions::addEnergySmearing(float eneIn)
 {
   /// @param eneIn in keV
-  float alpha = 0.044 / sqrt(eneIn / 1000.);
-  return eneIn + alpha * eneIn * fRandomGenerator->Gaus(0., 1.);
+  //float alpha = 0.044 / sqrt(eneIn / 1000.);
+  //return eneIn + alpha * eneIn * fRandomGenerator->Gaus(0., 1.);
+  return fFunEnergySmearing(eneIn);
 }
 
-float JPetSmearingFunctions::addTimeSmearing(float timeIn, float eneIn)
+const double JPetSmearingFunctions::addTimeSmearing(float timeIn, float eneIn)
 {
   /// @param eneIn in keV
   /// @param timeIn in ps
-  float time;
+//  float time;
+//
+//  if ( eneIn > kEnergyThreshold ) {
+//    time = timeIn + kTimeResolutionConstant * fRandomGenerator->Gaus(0., 1.);
+//  } else {
+//    time = timeIn + kTimeResolutionConstant * fRandomGenerator->Gaus(0., 1.) / sqrt(eneIn / kReferenceEnergy);
+//  }
 
-  if ( eneIn > kEnergyThreshold ) {
-    time = timeIn + kTimeResolutionConstant * fRandomGenerator->Gaus(0., 1.);
-  } else {
-    time = timeIn + kTimeResolutionConstant * fRandomGenerator->Gaus(0., 1.) / sqrt(eneIn / kReferenceEnergy);
-  }
-
-  return time;
+   double ene = 4.0;
+  return  fFunTimeSmearing(timeIn,ene);
 }
 
 
+//void JPetSmearingFunctions::SetFunTimeSmearing(const Params &params, Range range) 
+//{
+//   fFunTimeSmearing(params,range);
+//}
+//
+//void JPetSmearingFunctions::SetStandardSmearing()
+//{
+//  Params params("pol1", { -91958., 19341.});
+//  SetFunTimeSmearing(params,Range(100,0.,100.));
+//
+//}
