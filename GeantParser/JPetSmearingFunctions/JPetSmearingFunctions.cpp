@@ -22,19 +22,21 @@ const float JPetSmearingFunctions::kTimeResolutionConstant = 80.; ///< see Eur. 
 
 CachedFunction2D JPetSmearingFunctions::fFunTimeSmearing(fParamTimeSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
 CachedFunction1D JPetSmearingFunctions::fFunEnergySmearing(fParamEnergySmearing,Range(10000, 0., 100.));
-CachedFunction2D JPetSmearingFunctions::fFunZHitSmearing(fParamZHitSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
 
 // z: zIn, EneIn
 // e: eneIn
 // t: t, eneIn
-float JPetSmearingFunctions::addZHitSmearing(float zIn, float z_res)
+double JPetSmearingFunctions::addZHitSmearing(double zIn, double eneIn)
 {
+
+  Params JPetSmearingFunctions::fParamZHitSmearing("exp(-0.5*((x-[0])/[1])**2)/(sqrt(2*pi)*[1]))", {zIn,eneIn});
+
+  CachedFunction2D JPetSmearingFunctions::FunZHitSmearing(fParamZHitSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
   //return fRandomGenerator->Gaus(zIn, z_res);
-   double ene = 4.0;
-  return fFunZHitSmearing(zIn,ene);
+  return FunZHitSmearing->GetRandom();
 }
 
-float JPetSmearingFunctions::addEnergySmearing(float eneIn)
+double JPetSmearingFunctions::addEnergySmearing(double eneIn)
 {
   /// @param eneIn in keV
   //float alpha = 0.044 / sqrt(eneIn / 1000.);

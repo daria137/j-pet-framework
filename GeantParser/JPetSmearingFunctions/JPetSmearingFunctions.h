@@ -36,13 +36,14 @@ using CachedFunction2D = jpet_common_tools::JPetCachedFunction2D;
 
 const Params fParamTimeSmearing("pol0", {-1});  
 const Params fParamEnergySmearing("pol0", {-1});  
-const Params fParamZHitSmearing("pol0", {-1});  
+// gausn [0]*exp(-0.5*((x-[1])/[2])**2)/(sqrt(2*pi)*[2]))
+// fZresolution  0.976: 80ps   12.2  velocity  
 
 class JPetSmearingFunctions
 {
   public:
-    static float addEnergySmearing(float);
-    static float addZHitSmearing(float, float);
+    static double addEnergySmearing(double);
+    static double addZHitSmearing(double zIn, double eneIn);
     static const double addTimeSmearing(float, float);
 
     static void SetFunTimeSmearing(const Params &params, const Range range); 
@@ -56,7 +57,6 @@ class JPetSmearingFunctions
 
     static CachedFunction1D fFunEnergySmearing;
     static CachedFunction2D fFunZHitSmearing;
-    static CachedFunction2D fFunTimeSmearing;
 
 
 };
