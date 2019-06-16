@@ -40,9 +40,9 @@ JPetMCHit JPetGeantParserTools::createJPetMCHit(JPetGeantScinHits* geantHit, con
 JPetHit JPetGeantParserTools::reconstructHit(JPetMCHit& mcHit, const JPetParamBank& paramBank, const float timeShift)
 {
   JPetHit hit = dynamic_cast<JPetHit&>(mcHit);
-  hit.setEnergy( JPetSmearingFunctions::addEnergySmearing(mcHit.getEnergy()) );
+  hit.setEnergy( JPetSmearingFunctions::addEnergySmearing(mcHit.getPosZ() ,mcHit.getEnergy()) );
   // adjust to time window and smear
-  hit.setTime(JPetSmearingFunctions::addTimeSmearing( -(mcHit.getTime() - timeShift), mcHit.getEnergy()) );
+  hit.setTime(JPetSmearingFunctions::addTimeSmearing(mcHit.getPosZ() ,mcHit.getEnergy() , -(mcHit.getTime() - timeShift)) );
 
   auto radius = paramBank.getScintillator(mcHit.getScintillator().getID()).getBarrelSlot().getLayer().getRadius();
   auto theta = TMath::DegToRad() * paramBank.getScintillator(mcHit.getScintillator().getID()).getBarrelSlot().getTheta();

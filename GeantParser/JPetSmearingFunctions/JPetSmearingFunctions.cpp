@@ -20,55 +20,55 @@ const float JPetSmearingFunctions::kEnergyThreshold = 200.; ///< see Eur. Phys. 
 const float JPetSmearingFunctions::kReferenceEnergy = 270.; ///< see Eur. Phys. J. C (2016) 76:445  equation 4 and 5
 const float JPetSmearingFunctions::kTimeResolutionConstant = 80.; ///< see Eur. Phys. J. C (2016) 76:445  equation 3
 
-CachedFunction2D JPetSmearingFunctions::fFunTimeSmearing(fParamTimeSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
-CachedFunction1D JPetSmearingFunctions::fFunEnergySmearing(fParamEnergySmearing,Range(10000, 0., 100.));
+std::string JPetSmearingFunctions::fFunEnergySmearing = "[&](double *x,double *p){ return p[2]*(1+p[0]*exp(-0.5*(pow(x[0],2)))/(sqrt(2*M_PI)*p[2]/1000.));}"; ///< 0:0.044 1:zIn 2:eneIn 
+std::string JPetSmearingFunctions::fFunZHitSmearing = "[&](double *x, double *p){return exp(-0.5*(pow(x[0]-p[1]/p[0],2)))/(sqrt(2*M_PI)*p[0]);}"; ///< 0:sigma:0.976 1:zIn 2:eneIn
+std::string JPetSmearingFunctions::fFunTimeHitSmearing = "[&](double *x,double *p){ if(p[4]>p[0]) {  return p[5]+p[1]*exp(-0.5*pow(x[0],2))/(sqrt(2*M_PI)); } else {  return p[5]+p[1]*exp(-0.5*pow(x[0],2))/(sqrt(2*M_PI*p[4]/p[2])); };} "; ///< 0:EneThr 1:resolution 2:refEne 3:zIn 4:eneIn 5:timeIn 
 
-// z: zIn, EneIn
-// e: eneIn
-// t: t, eneIn
+std::vector<double> JPetSmearingFunctions::fParamEnergySmearing = {0.044};
+std::vector<double> JPetSmearingFunctions::fParamZHitSmearing = {0.976};
+std::vector<double> JPetSmearingFunctions::fParamTimeHitSmearing = {kEnergyThreshold,kTimeResolutionConstant,kReferenceEnergy };
+
+
 double JPetSmearingFunctions::addZHitSmearing(double zIn, double eneIn)
 {
+  
+  auto fParam  = fParamZHitSmearing;
+  fParam.push_back(zIn);
+  fParam.push_back(eneIn);
+  TF1 func("funZHitSmearing", fFunZHitSmearing.c_str(), -120., 120.,fParam.size());
+  for(int i=0; i<fParam.size(); i++){
+    func.SetParameter(i,fParam[i]);
+  }
 
-  Params JPetSmearingFunctions::fParamZHitSmearing("exp(-0.5*((x-[0])/[1])**2)/(sqrt(2*pi)*[1]))", {zIn,eneIn});
-
-  CachedFunction2D JPetSmearingFunctions::FunZHitSmearing(fParamZHitSmearing,Range(10000, 0., 100.),Range(10000, 0., 100.));
-  //return fRandomGenerator->Gaus(zIn, z_res);
-  return FunZHitSmearing->GetRandom();
+  return func.GetRandom();
 }
 
-double JPetSmearingFunctions::addEnergySmearing(double eneIn)
+double JPetSmearingFunctions::addEnergySmearing(double zIn, double eneIn)
 {
-  /// @param eneIn in keV
-  //float alpha = 0.044 / sqrt(eneIn / 1000.);
-  //return eneIn + alpha * eneIn * fRandomGenerator->Gaus(0., 1.);
-  return fFunEnergySmearing(eneIn);
+  auto fParam  = fParamEnergySmearing;
+  fParam.push_back(zIn);
+  fParam.push_back(eneIn);
+  TF1 func("funEnergySmearing", fFunEnergySmearing.c_str(), 0., 2000.,fParam.size());
+
+  for(int i=0; i<fParam.size(); i++){
+    func.SetParameter(i,fParam[i]);
+  }
+
+  return func.GetRandom();
 }
 
-const double JPetSmearingFunctions::addTimeSmearing(float timeIn, float eneIn)
+const double JPetSmearingFunctions::addTimeSmearing(double zIn, double eneIn, double timeIn)
 {
-  /// @param eneIn in keV
-  /// @param timeIn in ps
-//  float time;
-//
-//  if ( eneIn > kEnergyThreshold ) {
-//    time = timeIn + kTimeResolutionConstant * fRandomGenerator->Gaus(0., 1.);
-//  } else {
-//    time = timeIn + kTimeResolutionConstant * fRandomGenerator->Gaus(0., 1.) / sqrt(eneIn / kReferenceEnergy);
-//  }
 
-   double ene = 4.0;
-  return  fFunTimeSmearing(timeIn,ene);
+  auto fParam  = fParamTimeHitSmearing;
+  fParam.push_back(zIn);
+  fParam.push_back(eneIn);
+  fParam.push_back(timeIn);
+  TF1 func("funTimeSmearing", fFunTimeHitSmearing.c_str(), -2000., 2000.,fParam.size());
+
+  for(int i=0; i<fParam.size(); i++){
+    func.SetParameter(i,fParam[i]);
+  }
+
+  return func.GetRandom();
 }
-
-
-//void JPetSmearingFunctions::SetFunTimeSmearing(const Params &params, Range range) 
-//{
-//   fFunTimeSmearing(params,range);
-//}
-//
-//void JPetSmearingFunctions::SetStandardSmearing()
-//{
-//  Params params("pol1", { -91958., 19341.});
-//  SetFunTimeSmearing(params,Range(100,0.,100.));
-//
-//}

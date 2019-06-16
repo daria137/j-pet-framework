@@ -16,7 +16,8 @@
 #ifndef JPETSMEARINGFUNCTIONS_H
 #define JPETSMEARINGFUNCTIONS_H
 
-#include <JPetCachedFunction/JPetCachedFunction.h>
+#include <TF1.h>
+
 
 #ifdef __CINT__
 //when cint is used instead of compiler, override word is not recognized
@@ -24,40 +25,30 @@
 #   define override
 #endif
 
-using Params = jpet_common_tools::JPetCachedFunctionParams;
-using Range = jpet_common_tools::Range;
-using CachedFunction1D = jpet_common_tools::JPetCachedFunction1D;
-using CachedFunction2D = jpet_common_tools::JPetCachedFunction2D;
-
 /**
  * @brief stores smearing functions that should be applied to generated computer simulations in
  * order to reproduce collected data 
  */
 
-const Params fParamTimeSmearing("pol0", {-1});  
-const Params fParamEnergySmearing("pol0", {-1});  
-// gausn [0]*exp(-0.5*((x-[1])/[2])**2)/(sqrt(2*pi)*[2]))
-// fZresolution  0.976: 80ps   12.2  velocity  
-
 class JPetSmearingFunctions
 {
   public:
-    static double addEnergySmearing(double);
+    static double addEnergySmearing(double zIn, double eneIn);
     static double addZHitSmearing(double zIn, double eneIn);
-    static const double addTimeSmearing(float, float);
-
-    static void SetFunTimeSmearing(const Params &params, const Range range); 
-
-    static void SetStandardSmearing();
+    static const double addTimeSmearing(double zIn, double eneIn, double timeIn);
 
   private:
     static const float kEnergyThreshold;
     static const float kReferenceEnergy;
     static const float kTimeResolutionConstant;
 
-    static CachedFunction1D fFunEnergySmearing;
-    static CachedFunction2D fFunZHitSmearing;
+    static std::string fFunEnergySmearing;
+    static std::string fFunZHitSmearing;
+    static std::string fFunTimeHitSmearing;
 
+    static std::vector<double> fParamEnergySmearing;
+    static std::vector<double> fParamZHitSmearing;
+    static std::vector<double> fParamTimeHitSmearing;
 
 };
 
