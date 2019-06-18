@@ -14,61 +14,98 @@
  */
 
 #include <JPetSmearingFunctions/JPetSmearingFunctions.h>
-#include <TMath.h>
 
-const float JPetSmearingFunctions::kEnergyThreshold = 200.; ///< see Eur. Phys. J. C (2016) 76:445  equation 4 and 5 
-const float JPetSmearingFunctions::kReferenceEnergy = 270.; ///< see Eur. Phys. J. C (2016) 76:445  equation 4 and 5
-const float JPetSmearingFunctions::kTimeResolutionConstant = 80.; ///< see Eur. Phys. J. C (2016) 76:445  equation 3
+JPetSmearingFunctionsContainer JPetSmearingFunctions::fSmearingFunctions = JPetSmearingFunctionsContainer();
 
-std::string JPetSmearingFunctions::fFunEnergySmearing = "[&](double *x,double *p){ return p[2]*(1+p[0]*exp(-0.5*(pow(x[0],2)))/(sqrt(2*M_PI)*p[2]/1000.));}"; ///< 0:0.044 1:zIn 2:eneIn 
-std::string JPetSmearingFunctions::fFunZHitSmearing = "[&](double *x, double *p){return exp(-0.5*(pow(x[0]-p[1]/p[0],2)))/(sqrt(2*M_PI)*p[0]);}"; ///< 0:sigma:0.976 1:zIn 2:eneIn
-std::string JPetSmearingFunctions::fFunTimeHitSmearing = "[&](double *x,double *p){ if(p[4]>p[0]) {  return p[5]+p[1]*exp(-0.5*pow(x[0],2))/(sqrt(2*M_PI)); } else {  return p[5]+p[1]*exp(-0.5*pow(x[0],2))/(sqrt(2*M_PI*p[4]/p[2])); };} "; ///< 0:EneThr 1:resolution 2:refEne 3:zIn 4:eneIn 5:timeIn 
-
-std::vector<double> JPetSmearingFunctions::fParamEnergySmearing = {0.044};
-std::vector<double> JPetSmearingFunctions::fParamZHitSmearing = {0.976};
-std::vector<double> JPetSmearingFunctions::fParamTimeHitSmearing = {kEnergyThreshold,kTimeResolutionConstant,kReferenceEnergy };
-
-
-double JPetSmearingFunctions::addZHitSmearing(double zIn, double eneIn)
+JPetSmearingFunctionsContainer::JPetSmearingFunctionsContainer()
 {
-  
-  auto fParam  = fParamZHitSmearing;
-  fParam.push_back(zIn);
-  fParam.push_back(eneIn);
-  TF1 func("funZHitSmearing", fFunZHitSmearing.c_str(), -120., 120.,fParam.size());
-  for(int i=0; i<fParam.size(); i++){
-    func.SetParameter(i,fParam[i]);
-  }
-
-  return func.GetRandom();
+  sf = new JPetHitSmearingFunctions();
+  fFunEnergySmearing = new TF1("funEnergySmearing",sf,&JPetHitSmearingFunctions::hitEnergySmearing, -200., 200.,3,"JPetHitSmearingFunctions","hitEnergySmearing");
+  fFunZHitSmearing = new TF1("funZHitSmearing",sf,&JPetHitSmearingFunctions::hitZSmearing, -200., 200.,3,"JPetHitSmearingFunctions","hitZSmearing");
+  fFunTimeHitSmearing = new TF1("funTimeHitSmearing",sf,&JPetHitSmearingFunctions::hitTimeSmearing, -200., 200.,4,"JPetHitSmearingFunctions","hitTimeSmearing");
 }
 
-double JPetSmearingFunctions::addEnergySmearing(double zIn, double eneIn)
+
+double JPetHitSmearingFunctions::hitEnergySmearing(double *x, double *p)
 {
-  auto fParam  = fParamEnergySmearing;
-  fParam.push_back(zIn);
-  fParam.push_back(eneIn);
-  TF1 func("funEnergySmearing", fFunEnergySmearing.c_str(), 0., 2000.,fParam.size());
+  // p[0] = scinID
+  // p[1] = zIn
+  // p[2] = eneIn
+  double eneIn = p[2];
+  double sigma = eneIn*0.044 / sqrt(eneIn / 1000.);
 
-  for(int i=0; i<fParam.size(); i++){
-    func.SetParameter(i,fParam[i]);
-  }
-
-  return func.GetRandom();
+  return exp(-0.5*pow((x[0]-eneIn)/sigma,2))/(sqrt(2*M_PI)*sigma);
 }
 
-const double JPetSmearingFunctions::addTimeSmearing(double zIn, double eneIn, double timeIn)
+double JPetHitSmearingFunctions::hitZSmearing(double *x, double *p)
 {
+  // p[0] = scinID
+  // p[1] = zIn
+  // p[2] = eneIn
+  double zIn = p[1];
+  double sigma = 0.976;
 
-  auto fParam  = fParamTimeHitSmearing;
-  fParam.push_back(zIn);
-  fParam.push_back(eneIn);
-  fParam.push_back(timeIn);
-  TF1 func("funTimeSmearing", fFunTimeHitSmearing.c_str(), -2000., 2000.,fParam.size());
-
-  for(int i=0; i<fParam.size(); i++){
-    func.SetParameter(i,fParam[i]);
-  }
-
-  return func.GetRandom();
+  return exp(-0.5*pow((x[0]-zIn)/sigma,2))/(sqrt(2*M_PI)*sigma);
 }
+
+double JPetHitSmearingFunctions::hitTimeSmearing(double *x, double *p)
+{
+  // p[0] = scinID
+  // p[1] = zIn
+  // p[2] = eneIn
+  // p[3] = timeIn
+  const double kEnergyThreshold = 200.; ///< see Eur. Phys. J. C (2016) 76:445  equation 4 and 5 
+  const double kReferenceEnergy = 270.; ///< see Eur. Phys. J. C (2016) 76:445  equation 4 and 5
+  const double kTimeResolutionConstant = 80.; ///< see Eur. Phys. J. C (2016) 76:445  equation 3
+
+  double time;
+  double eneIn = p[2];
+  double timeIn = p[3];
+
+
+  double sigma = kTimeResolutionConstant; 
+  if ( eneIn < kEnergyThreshold ) {
+    sigma = sigma/ sqrt(eneIn / kReferenceEnergy);
+  }
+  return exp(-0.5*pow((x[0]-timeIn)/sigma,2))/(sqrt(2*M_PI)*sigma);
+}
+
+
+TF1* JPetSmearingFunctionsContainer::getFunEnergySmearing()
+{
+  return fFunEnergySmearing;
+}
+
+TF1* JPetSmearingFunctionsContainer::getFunZHitSmearing()
+{
+  return fFunZHitSmearing;
+}
+
+TF1* JPetSmearingFunctionsContainer::getFunTimeHitSmearing()
+{
+  return fFunTimeHitSmearing;
+}
+
+
+double JPetSmearingFunctions::addZHitSmearing(int scinID, double zIn, double eneIn)
+{
+  fSmearingFunctions.getFunZHitSmearing()->SetParameters(double(scinID),zIn,eneIn);
+  fSmearingFunctions.getFunZHitSmearing()->SetRange(zIn-5.,zIn+5.);
+  return fSmearingFunctions.getFunZHitSmearing()->GetRandom();
+}
+
+double JPetSmearingFunctions::addEnergySmearing(int scinID, double zIn, double eneIn)
+{
+  fSmearingFunctions.getFunEnergySmearing()->SetParameters(double(scinID),zIn,eneIn);
+  fSmearingFunctions.getFunEnergySmearing()->SetRange(eneIn-100.,eneIn+100.);
+  return fSmearingFunctions.getFunEnergySmearing()->GetRandom();
+}
+
+double JPetSmearingFunctions::addTimeSmearing(int scinID, double zIn, double eneIn, double timeIn)
+{
+  fSmearingFunctions.getFunTimeHitSmearing()->SetParameters(double(scinID),zIn,eneIn,timeIn);
+  fSmearingFunctions.getFunTimeHitSmearing()->SetRange(timeIn-300.,timeIn+300.);
+  return fSmearingFunctions.getFunTimeHitSmearing()->GetRandom();
+}
+
+

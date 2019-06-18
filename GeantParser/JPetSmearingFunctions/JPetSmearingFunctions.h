@@ -25,6 +25,31 @@
 #   define override
 #endif
 
+class JPetHitSmearingFunctions
+{
+  public:
+    virtual double hitEnergySmearing(double *x, double *p);
+    virtual double hitZSmearing(double *x, double *p);
+    virtual double hitTimeSmearing(double *x, double *p);
+};
+
+
+
+class JPetSmearingFunctionsContainer
+{
+  public:
+    JPetSmearingFunctionsContainer();
+    TF1* getFunEnergySmearing();
+    TF1* getFunZHitSmearing();
+    TF1* getFunTimeHitSmearing();
+  private:
+    JPetHitSmearingFunctions* sf = nullptr;
+    TF1* fFunEnergySmearing;
+    TF1* fFunZHitSmearing;
+    TF1* fFunTimeHitSmearing;
+};
+
+
 /**
  * @brief stores smearing functions that should be applied to generated computer simulations in
  * order to reproduce collected data 
@@ -33,23 +58,14 @@
 class JPetSmearingFunctions
 {
   public:
-    static double addEnergySmearing(double zIn, double eneIn);
-    static double addZHitSmearing(double zIn, double eneIn);
-    static const double addTimeSmearing(double zIn, double eneIn, double timeIn);
+    static double addEnergySmearing(int scinID, double zIn, double eneIn);
+    static double addZHitSmearing(int scinID, double zIn, double eneIn);
+    static double addTimeSmearing(int scinID, double zIn, double eneIn, double timeIn);
 
   private:
-    static const float kEnergyThreshold;
-    static const float kReferenceEnergy;
-    static const float kTimeResolutionConstant;
-
-    static std::string fFunEnergySmearing;
-    static std::string fFunZHitSmearing;
-    static std::string fFunTimeHitSmearing;
-
-    static std::vector<double> fParamEnergySmearing;
-    static std::vector<double> fParamZHitSmearing;
-    static std::vector<double> fParamTimeHitSmearing;
-
+    static JPetSmearingFunctionsContainer fSmearingFunctions; 
 };
+
+
 
 #endif
